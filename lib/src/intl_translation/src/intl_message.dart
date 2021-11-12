@@ -603,11 +603,11 @@ class MainMessage extends ComplexMessage {
 
   /// Generate code for this message, expecting it to be part of a map
   /// keyed by name with values the function that calls Intl.message.
-  String toCodeForLocale(String locale, String name) {
+  String toCodeForLocale(String locale, String name, String originalName) {
     var out = StringBuffer()
-      ..write('static String $name(')
+      ..write('String $name(')
       ..write((arguments ?? []).join(', '))
-      ..write(') => "')
+      ..write(') => dynamicMessages?["${originalName}"]?.tryFormat([${(arguments ?? []).join(', ')}]) ?? "')
       ..write(translations[locale])
       ..write('";');
     return out.toString();

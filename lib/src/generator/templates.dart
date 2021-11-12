@@ -43,6 +43,12 @@ class $className {
       return instance;
     });
   } 
+  
+  static bool update(Locale locale, Map<String, String>? messages) {
+    final name = (locale.countryCode?.isEmpty ?? false) ? locale.languageCode : locale.toString();
+    final localeName = Intl.canonicalizedLocale(name);${otaEnabled ? '\n${_generateMetadataSetter()}' : ''} 
+    return updateMessages(localeName, messages);
+  }
 
   static $className of(BuildContext context) {
     final instance = $className.maybeOf(context);

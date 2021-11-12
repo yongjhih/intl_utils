@@ -157,7 +157,7 @@ class MessageGeneration {
         output
           ..write('  ')
           ..write(
-              original.toCodeForLocale(locale, _methodNameFor(original.name)))
+              original.toCodeForLocale(locale, _methodNameFor(original.name), original.name))
           ..write('\n\n');
       }
     }
@@ -171,11 +171,11 @@ class MessageGeneration {
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name)))
         .map((original) =>
-            '    "${original.escapeAndValidateString(original.name)}" '
+            '        "${original.escapeAndValidateString(original.name)}" '
             ': ${_mapReference(original, locale)}');
     output
       ..write(entries.join(',\n'))
-      ..write('\n  };\n}\n');
+      ..write('\n      };\n    }\n  return _messages;\n  }\n}\n');
   }
 
   /// Any additional imports the individual message files need.
@@ -186,8 +186,15 @@ class MessageGeneration {
       // being inlined into the main one, defeating the space savings. Issue
       // 24356
       '''
-  final messages = _notInlinedMessages(_notInlinedMessages);
-  static Map<String, Function> _notInlinedMessages(_) => <String, Function> {
+  Map<String, String>? dynamicMessages;
+  late final Map<String, dynamic> _messages;
+  bool initialized = false;
+  
+  @override
+  Map<String, dynamic> get messages {
+    if (!initialized) {
+      initialized = true;
+      _messages = <String, Function>{
 ''';
 
   /// [generateIndividualMessageFile] for the beginning of the file,
@@ -207,12 +214,14 @@ class MessageGeneration {
 
 import 'package:$intlImportPath/intl.dart';
 import 'package:$intlImportPath/message_lookup_by_library.dart';
+
+import 'utils.dart';
 $extraImports
 final messages = new MessageLookup();
 
 typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 
-class MessageLookup extends MessageLookupByLibrary {
+class MessageLookup extends DynamicMessageLookupByLibrary {
   String get localeName => '$locale';
 
 """ +
@@ -263,7 +272,7 @@ class MessageLookup extends MessageLookupByLibrary {
       output.write(loadOperation);
     }
     output.write('};\n');
-    output.write('\nMessageLookupByLibrary? _findExact(String localeName) {\n'
+    output.write('\nDynamicMessageLookupByLibrary? _findExact(String localeName) {\n'
         '  switch (localeName) {\n');
     for (var rawLocale in allLocales) {
       var locale = Intl.canonicalizedLocale(rawLocale);
@@ -293,6 +302,8 @@ import 'dart:async';
 import 'package:$intlImportPath/intl.dart';
 import 'package:$intlImportPath/message_lookup_by_library.dart';
 import 'package:$intlImportPath/src/intl_helpers.dart';
+
+import 'utils.dart';
 
 """;
 
@@ -326,7 +337,16 @@ bool _messagesExistFor(String locale) {
   }
 }
 
-MessageLookupByLibrary? _findGeneratedMessagesFor(String locale) {
+bool updateMessages(String localeName, Map<String, String>? messages) {
+  final library = _findExact(localeName);
+  if (library != null) {
+    library.dynamicMessages = messages;
+    return true;
+  }
+  return false;
+}
+
+DynamicMessageLookupByLibrary? _findGeneratedMessagesFor(String locale) {
   var actualLocale = Intl.verifiedLocale(locale, _messagesExistFor,
       onFailure: (_) => null);
   if (actualLocale == null) return null;
@@ -526,7 +546,7 @@ bool _hasArguments(MainMessage message) =>
 String _mapReference(MainMessage original, String locale) {
   if (!_hasArguments(original)) {
     // No parameters, can be printed simply.
-    return 'MessageLookupByLibrary.simpleMessage("'
+    return 'MessageLookupByLibrary.simpleMessage(dynamicMessages?["${original.escapeAndValidateString(original.name)}"] ?? "'
         '${original.translations[locale]}")';
   } else {
     return _methodNameFor(original.name);

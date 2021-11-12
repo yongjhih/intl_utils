@@ -82,6 +82,48 @@ class IntlTranslationHelper {
     var formattedContent = formatDartContent(content, fileName);
 
     mainImportFile.writeAsStringSync(formattedContent);
+    File(path.join(outputDir, '${generation.generatedFilePrefix}utils.dart')).writeAsStringSync('''
+// DO NOT EDIT. This is code generated via package:intl/generate_localized.dart
+// This is a library that looks up messages for specific locales by
+// delegating to the appropriate library.
+
+// Ignore issues from commonly used lints in this file.
+// ignore_for_file: non_constant_identifier_names, lines_longer_than_80_chars
+// ignore_for_file: join_return_with_assignment, prefer_final_in_for_each
+// ignore_for_file: avoid_redundant_argument_values, avoid_escaping_inner_quotes
+import 'package:${generation.intlImportPath}/message_lookup_by_library.dart';
+
+abstract class DynamicMessageLookupByLibrary extends MessageLookupByLibrary {
+  Map<String, String>? dynamicMessages;
+}
+
+extension StringX on String {
+  String? tryFormat(List<dynamic> args) {
+    try {
+      return format(args);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  String format(List<dynamic> args) {
+    var matchIndex = 0;
+    final replace = (Match m) {
+      if (matchIndex < args.length) {
+        switch (m[0]) {
+          case "%s":
+            return args[matchIndex++].toString();
+        }
+      } else {
+        throw new Exception("Missing parameter for string format");
+      }
+      throw new Exception("Invalid format string: " + m[0].toString());
+    };
+
+    return this.replaceAllMapped("%s", replace);
+  }
+}
+''');
   }
 
   void _loadData(String filename, Map<String, List<Map>> messagesByLocale) {
