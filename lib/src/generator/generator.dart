@@ -17,6 +17,7 @@ class Generator {
   late String _outputDir;
   late bool _useDeferredLoading;
   late bool _otaEnabled;
+  bool missed = false;
 
   /// Creates a new generator with configuration from the 'pubspec.yaml' file.
   Generator() {
@@ -72,8 +73,9 @@ class Generator {
   /// Generates localization files.
   Future<void> generateAsync() async {
     await _updateL10nDir();
-    await _updateGeneratedDir();
-    await _generateDartFiles();
+    final labels = _getLabelsFromMainArbFile();
+    await _updateGeneratedDir(labels);
+    await _generateDartFiles(labels);
   }
 
   Future<void> _updateL10nDir() async {
@@ -83,8 +85,7 @@ class Generator {
     }
   }
 
-  Future<void> _updateGeneratedDir() async {
-    var labels = _getLabelsFromMainArbFile();
+  Future<void> _updateGeneratedDir(List<Label> labels) async {
     var locales = _orderLocales(getLocales(_arbDir));
     var content =
         generateL10nDartFileContent(_className, labels, locales, _otaEnabled);
@@ -140,12 +141,12 @@ class Generator {
         : locales;
   }
 
-  Future<void> _generateDartFiles() async {
+  Future<void> _generateDartFiles(List<Label> labels) async {
     var outputDir = getIntlDirectoryPath(_outputDir);
     var dartFiles = [getL10nDartFilePath(_outputDir)];
     var arbFiles = getArbFiles(_arbDir).map((file) => file.path).toList();
 
-    var helper = IntlTranslationHelper(_useDeferredLoading);
-    helper.generateFromArb(outputDir, dartFiles, arbFiles);
+    var helper = IntlTranslationHelper(_useDeferredLoading, missed);
+    helper.generateFromArb(outputDir, dartFiles, arbFiles, labels);
   }
 }

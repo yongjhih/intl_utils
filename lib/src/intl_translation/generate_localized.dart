@@ -52,6 +52,7 @@ import 'package:path/path.dart' as path;
 
 import './src/intl_message.dart';
 import '../utils/utils.dart';
+import '../generator/label.dart';
 
 class MessageGeneration {
   /// If the import path following package: is something else, modify the
@@ -97,6 +98,9 @@ class MessageGeneration {
 
   bool get jsonMode => false;
 
+  /// Add all missing translations either?
+  bool missed = false;
+
   /// Holds the generated translations.
   StringBuffer output = StringBuffer();
 
@@ -107,9 +111,9 @@ class MessageGeneration {
   /// Generate a file <[generated_file_prefix]>_messages_<[locale]>.dart
   /// for the [translations] in [locale] and put it in [targetDir].
   void generateIndividualMessageFile(String basicLocale,
-      Iterable<TranslatedMessage> translations, String targetDir) {
+      Iterable<TranslatedMessage> translations, String targetDir, List<Label> labels) {
     final fileName = '${generatedFilePrefix}messages_$basicLocale.dart';
-    final content = contentForLocale(basicLocale, translations);
+    final content = contentForLocale(basicLocale, translations, labels);
     final formattedContent = formatDartContent(content, fileName);
 
     // To preserve compatibility, we don't use the canonical version of the
@@ -121,7 +125,7 @@ class MessageGeneration {
   /// Generate a string that contains the dart code
   /// with the [translations] in [locale].
   String contentForLocale(
-      String basicLocale, Iterable<TranslatedMessage> translations) {
+      String basicLocale, Iterable<TranslatedMessage> translations, List<Label> labels) {
     clearOutput();
     var locale = MainMessage()
         .escapeAndValidateString(Intl.canonicalizedLocale(basicLocale));
@@ -517,6 +521,8 @@ abstract class TranslatedMessage {
   TranslatedMessage(this.id, this.translated);
 
   Message get message => translated;
+
+  bool missed = false;
 
   @override
   String toString() => id.toString();

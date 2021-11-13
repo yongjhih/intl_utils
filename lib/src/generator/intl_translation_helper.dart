@@ -41,6 +41,7 @@ import '../intl_translation/src/icu_parser.dart';
 import '../intl_translation/src/intl_message.dart';
 
 import '../utils/utils.dart';
+import 'label.dart';
 
 class IntlTranslationHelper {
   final pluralAndGenderParser = IcuParser().message;
@@ -52,14 +53,19 @@ class IntlTranslationHelper {
   final Map<String, List<MainMessage>> messages =
       {}; // Track of all processed messages, keyed by message name
 
-  IntlTranslationHelper([bool useDeferredLoading = false]) {
+  IntlTranslationHelper([bool useDeferredLoading = false, bool missed = false]) {
     extraction.suppressWarnings = true;
     generation.useDeferredLoading = useDeferredLoading;
     generation.generatedFilePrefix = '';
+    generation.missed = missed;
   }
 
   void generateFromArb(
-      String outputDir, List<String> dartFiles, List<String> arbFiles) {
+      String outputDir,
+      List<String> dartFiles,
+      List<String> arbFiles,
+      List<Label> labels,
+      ) {
     var allMessages = dartFiles.map((file) => extraction.parseFile(File(file)));
     for (var messageMap in allMessages) {
       messageMap.forEach(
@@ -72,7 +78,7 @@ class IntlTranslationHelper {
       _loadData(arbFile, messagesByLocale);
     }
     messagesByLocale.forEach((locale, data) {
-      _generateLocaleFile(locale, data, outputDir);
+      _generateLocaleFile(locale, data, outputDir, labels);
     });
 
     var fileName = '${generation.generatedFilePrefix}messages_all.dart';
@@ -146,8 +152,9 @@ extension StringX on String {
   }
 
   void _generateLocaleFile(
-      String locale, List<Map> localeData, String targetDir) {
+      String locale, List<Map> localeData, String targetDir, List<Label> labels) {
     var translations = <TranslatedMessage>[];
+    /// localeData.map((k, v) => TranslatedMessage.of(k, v))
     for (var jsonTranslations in localeData) {
       jsonTranslations.forEach((id, messageData) {
         TranslatedMessage? message = _recreateIntlObjects(id, messageData);
@@ -156,7 +163,21 @@ extension StringX on String {
         }
       });
     }
-    generation.generateIndividualMessageFile(locale, translations, targetDir);
+    /// Add missing translations from the main messages by labels
+    if (generation.missed) {
+      for (final label in labels) {
+        if (translations.any((it) => it.id == label.name)) {
+          continue;
+        } else {
+          final message = _recreateIntlObjects(label.name, label.content);
+          if (message != null) {
+            message.missed = true;
+            translations.add(message);
+          }
+        }
+      }
+    }
+    generation.generateIndividualMessageFile(locale, translations, targetDir, labels);
   }
 
   /// Regenerate the original IntlMessage objects from the given [data]. For
