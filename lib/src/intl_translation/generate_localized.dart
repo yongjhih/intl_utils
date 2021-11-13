@@ -552,8 +552,8 @@ bool _hasArguments(MainMessage message) =>
 String _mapReference(MainMessage original, String locale) {
   if (!_hasArguments(original)) {
     // No parameters, can be printed simply.
-    return 'MessageLookupByLibrary.simpleMessage(dynamicMessages?["${original.escapeAndValidateString(original.name)}"] ?? "'
-        '${original.translations[locale]}")';
+    return '() => dynamicMessages?["${original.escapeAndValidateString(original.name)}"] ?? "'
+        '${original.translations[locale]}"';
   } else {
     return _methodNameFor(original.name);
   }

@@ -104,29 +104,35 @@ abstract class DynamicMessageLookupByLibrary extends MessageLookupByLibrary {
 }
 
 extension StringX on String {
-  String? tryFormat(List<dynamic> args) {
+  String? tryFormat(List<dynamic> params) {
     try {
-      return format(args);
-    } catch (err) {
+      return format(params);
+    } catch (error) {
       return null;
     }
   }
 
-  String format(List<dynamic> args) {
+  String format(List<dynamic> params) {
     var matchIndex = 0;
     final replace = (Match m) {
-      if (matchIndex < args.length) {
-        switch (m[0]) {
-          case "%s":
-            return args[matchIndex++].toString();
+      if (matchIndex < params.length) {
+        if (m[0] == "{{%\${matchIndex + 1}s}}") {
+          return params[matchIndex++].toString();
         }
       } else {
-        throw new Exception("Missing parameter for string format");
+        throw Exception("Missing parameter for string format");
       }
-      throw new Exception("Invalid format string: " + m[0].toString());
+      throw Exception("Invalid format string: \${m[0].toString()}");
     };
 
-    return this.replaceAllMapped("%s", replace);
+    String result = this;
+    for (var i = 0; i < params.length; i++) {
+      result = result.replaceAllMapped("{{%\${i + 1}s}}", replace);
+    }
+    if (result == this) {
+      throw Exception("Invalid format string: \$this");
+    }
+    return result;
   }
 }
 ''');
