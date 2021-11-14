@@ -132,14 +132,15 @@ Future<void> removeUnusedGeneratedDartFiles(
 
   var files = intlDir.listSync();
   for (var file in files) {
-    var basename = path.basename(file.path);
-    var substring = basename.substring(
-        'messages_'.length, basename.length - '.dart'.length);
+    final basename = path.basename(file.path);
 
     if (basename.startsWith('messages_') &&
-        basename.endsWith('.dart') &&
-        !['all', ...locales].contains(substring)) {
-      await file.delete(recursive: true);
+        basename.endsWith('.dart')) {
+      final substring = basename.substring(
+          'messages_'.length, basename.length - '.dart'.length);
+      if (!['all', ...locales].contains(substring)) {
+        await file.delete(recursive: true);
+      }
     }
   }
 }
