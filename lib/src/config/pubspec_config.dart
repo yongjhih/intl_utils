@@ -10,6 +10,8 @@ class PubspecConfig {
   String? _arbDir;
   String? _outputDir;
   bool? _useDeferredLoading;
+  bool? _missed;
+  bool? _shouldReload;
   LocalizelyConfig? _localizelyConfig;
 
   PubspecConfig() {
@@ -44,6 +46,12 @@ class PubspecConfig {
     _useDeferredLoading = flutterIntlConfig['use_deferred_loading'] is bool
         ? flutterIntlConfig['use_deferred_loading']
         : null;
+    _missed = flutterIntlConfig['missed'] is bool
+        ? flutterIntlConfig['missed']
+        : null;
+    _shouldReload = flutterIntlConfig['shouldReload'] is bool
+        ? flutterIntlConfig['shouldReload']
+        : null;
     _localizelyConfig =
         LocalizelyConfig.fromConfig(flutterIntlConfig['localizely']);
   }
@@ -59,6 +67,10 @@ class PubspecConfig {
   String? get outputDir => _outputDir;
 
   bool? get useDeferredLoading => _useDeferredLoading;
+
+  bool? get missed => _missed;
+
+  bool? get shouldReload => _shouldReload;
 
   LocalizelyConfig? get localizelyConfig => _localizelyConfig;
 }

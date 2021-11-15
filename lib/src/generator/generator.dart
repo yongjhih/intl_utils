@@ -17,7 +17,8 @@ class Generator {
   late String _outputDir;
   late bool _useDeferredLoading;
   late bool _otaEnabled;
-  bool missed = false;
+  late bool shouldReload;
+  late bool missed;
 
   /// Creates a new generator with configuration from the 'pubspec.yaml' file.
   Generator() {
@@ -68,6 +69,12 @@ class Generator {
 
     _otaEnabled =
         pubspecConfig.localizelyConfig?.otaEnabled ?? defaultOtaEnabled;
+
+    missed =
+        pubspecConfig.missed ?? true;
+
+    shouldReload =
+        pubspecConfig.shouldReload ?? false;
   }
 
   /// Generates localization files.
@@ -88,7 +95,10 @@ class Generator {
   Future<void> _updateGeneratedDir(List<Label> labels) async {
     var locales = _orderLocales(getLocales(_arbDir));
     var content =
-        generateL10nDartFileContent(_className, labels, locales, _otaEnabled);
+        generateL10nDartFileContent(_className, labels, locales,
+          otaEnabled: _otaEnabled,
+          shouldReload: shouldReload,
+        );
     var formattedContent = formatDartContent(content, 'l10n.dart');
 
     await updateL10nDartFile(formattedContent, _outputDir);
