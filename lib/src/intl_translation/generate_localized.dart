@@ -328,7 +328,7 @@ Future<bool> initializeMessages(String localeName) async {
   }
   var lib = _deferredLibraries[availableLocale];
   await (lib == null ? new Future.value(false) : lib());
-  initializeInternalMessageLookup(() => new CompositeMessageLookup());
+  initializeInternalMessageLookup(() => MultipleCompositeMessageLookup());
   messageLookup.addLocale(availableLocale, _findGeneratedMessagesFor);
   return new Future.value(true);
 }
@@ -355,6 +355,78 @@ DynamicMessageLookupByLibrary? _findGeneratedMessagesFor(String locale) {
       onFailure: (_) => null);
   if (actualLocale == null) return null;
   return _findExact(actualLocale);
+}
+
+/// This is a message lookup mechanism that delegates to one of a collection
+/// of individual [MessageLookupByLibrary] instances.
+class MultipleCompositeMessageLookup implements MessageLookup {
+  /// A map from locale names to the corresponding lookups.
+  Map<String, List<MessageLookupByLibrary>> availableMessages = Map();
+
+  /// Return true if we have a message lookup for [localeName].
+  bool localeExists(localeName) => availableMessages.containsKey(localeName);
+
+  /// The last locale in which we looked up messages.
+  ///
+  ///  If this locale matches the new one then we can skip looking up the
+  ///  messages and assume they will be the same as last time.
+  String? _lastLocale;
+
+  /// Caches the last messages that we found
+  List<MessageLookupByLibrary>? _lastLookups;
+
+  /// Look up the message with the given [name] and [locale] and return the
+  /// translated version with the values in [args] interpolated.  If nothing is
+  /// found, return the result of [ifAbsent] or [messageText].
+  String? lookupMessage(String? messageText, String? locale, String? name,
+      List<Object>? args, String? meaning,
+      {MessageIfAbsent? ifAbsent}) {
+    // If passed null, use the default.
+    final knownLocale = locale ?? Intl.getCurrentLocale();
+    final messages = (knownLocale == _lastLocale)
+        ? _lastLookups
+        : _lookupMessageCatalog(knownLocale);
+    // If we didn't find any messages for this locale, use the original string,
+    // faking interpolations if necessary.
+    if (messages == null) {
+      return ifAbsent == null ? messageText : ifAbsent(messageText, args);
+    }
+    for (final it in messages) {
+      final message = it.lookupMessage(messageText, locale, name, args, meaning, ifAbsent: (_, __) => "");
+      if (message != null && message != "") {
+        return message;
+      }
+    }
+    return ifAbsent == null ? messageText : ifAbsent(messageText, args);
+  }
+
+  /// Find the right message lookup for [locale].
+  List<MessageLookupByLibrary>? _lookupMessageCatalog(String locale) {
+    var verifiedLocale = Intl.verifiedLocale(locale, localeExists,
+        onFailure: (locale) => locale);
+    _lastLocale = locale;
+    _lastLookups = availableMessages[verifiedLocale];
+    return _lastLookups;
+  }
+
+  /// If we do not already have a locale for [localeName] then
+  /// [findLocale] will be called and the result stored as the lookup
+  /// mechanism for that locale.
+  void addLocale(String localeName, Function findLocale) {
+    var canonical = Intl.canonicalizedLocale(localeName);
+    var newLocale = findLocale(canonical);
+    if (newLocale != null) {
+      availableMessages[localeName] = (availableMessages[localeName]?..add(newLocale))
+          ?? <MessageLookupByLibrary>[newLocale];
+      availableMessages[canonical] = (availableMessages[canonical]?..add(newLocale))
+          ?? <MessageLookupByLibrary>[newLocale];
+      // If there was already a failed lookup for [newLocale], null the cache.
+      if (_lastLocale == newLocale) {
+        _lastLocale = null;
+        _lastLookups = null;
+      }
+    }
+  }
 }
 ''';
 }
