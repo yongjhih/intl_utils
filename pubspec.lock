@@ -7,14 +7,14 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "22.0.0"
+    version: "24.0.0"
   analyzer:
     dependency: "direct main"
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.2"
+    version: "2.1.0"
   archive:
     dependency: "direct main"
     description:
@@ -287,7 +287,7 @@ packages:
       name: mockito
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.15"
+    version: "5.2.0"
   node_preamble:
     dependency: transitive
     description:
