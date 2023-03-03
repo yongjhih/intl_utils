@@ -133,9 +133,8 @@ class MessageGeneration {
     // Exclude messages with no translation and translations with no matching
     // original message (e.g. if we're using some messages from a larger
     // catalog)
-    var usableTranslations = translations
-        .where((each) => each.originalMessages != null && each.message != null)
-        .toList();
+    var usableTranslations =
+        translations.where((each) => each.originalMessages != null).toList();
     for (var each in usableTranslations) {
       for (var original in each.originalMessages!) {
         original.addTranslation(locale, each.message);
@@ -215,6 +214,7 @@ class MessageGeneration {
 // ignore_for_file:prefer_single_quotes,comment_references, directives_ordering
 // ignore_for_file:annotate_overrides,prefer_generic_function_type_aliases
 // ignore_for_file:unused_import, file_names, avoid_escaping_inner_quotes
+// ignore_for_file:unnecessary_string_interpolations, unnecessary_string_escapes
 
 import 'package:$intlImportPath/intl.dart';
 import 'package:$intlImportPath/message_lookup_by_library.dart';
@@ -499,10 +499,10 @@ import '${generatedFilePrefix}messages_all.dart' show evaluateJsonTemplate;
 /// * String s -> s
 /// * int n -> '\${args[n]}'
 /// * List list, one of
-///   * \['Intl.plural', int howMany, (templates for zero, one, ...)\]
-///   * \['Intl.gender', String gender, (templates for female, male, other)\]
-///   * \['Intl.select', String choice, { 'case' : template, ...} \]
-///   * \['text alternating with ', 0 , ' indexes in the argument list'\]
+///   * ['Intl.plural', int howMany, (templates for zero, one, ...)]
+///   * ['Intl.gender', String gender, (templates for female, male, other)]
+///   * ['Intl.select', String choice, { 'case' : template, ...}]
+///   * ['text alternating with ', 0 , ' indexes in the argument list']
 String evaluateJsonTemplate(dynamic input, List<dynamic> args) {
   if (input == null) return null;
   if (input is String) return input;
@@ -575,12 +575,7 @@ abstract class TranslatedMessage {
 
   /// The original messages that we are a translation of. There can
   ///  be more than one original message for the same translation.
-  List<MainMessage>? _originalMessages;
-
-  List<MainMessage>? get originalMessages => _originalMessages;
-  set originalMessages(List<MainMessage>? x) {
-    _originalMessages = x;
-  }
+  List<MainMessage>? originalMessages;
 
   /// For backward compatibility, we still have the originalMessage API.
   MainMessage? get originalMessage => originalMessages?.first;
@@ -600,7 +595,8 @@ abstract class TranslatedMessage {
   String toString() => id.toString();
 
   @override
-  bool operator ==(x) => x is TranslatedMessage && x.id == id;
+  bool operator ==(Object other) =>
+      other is TranslatedMessage && other.id == id;
 
   @override
   int get hashCode => id.hashCode;
